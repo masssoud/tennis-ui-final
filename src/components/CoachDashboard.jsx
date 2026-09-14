@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import PersianCalendar from './PersianCalendar'
 import WeekTimeline from './WeekTimeline'
 import SessionModal from './SessionModal'
+import AgentDrawer from './AgentDrawer'
 import { TYPE_META, timeToFa, courtLabel } from '../lib/data'
 import { LogoutIcon, PlusIcon, TrashIcon, ClockIcon, Avatar } from './icons'
 import { formatFull, dayKey, toPersianDigits, todayJalali } from '../lib/persianDate'
@@ -359,6 +360,13 @@ export default function CoachDashboard({
           )}
         </div>
       )}
+
+      <AgentDrawer
+        users={users}
+        sessions={sessions}
+        onAddSessions={onAddSessions}
+        onRemoveSession={onRemoveSession}
+      />
     </div>
   )
 }
