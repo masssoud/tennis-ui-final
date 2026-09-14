@@ -1,0 +1,120 @@
+:root {
+  /* Surfaces — warm paper world */
+  --bg: #f6f1ea;
+  --bg-soft: #efe8de;
+  --surface: #ffffff;
+
+  /* Ink */
+  --ink: #241a13;
+  --ink-2: #5f5348;
+  --muted: #a29387;
+
+  /* Hairlines */
+  --line: #ebe2d6;
+  --line-strong: #d9cabb;
+
+  /* Clay accent — the one loud color */
+  --accent: #b23d16;
+  --accent-deep: #8f2f0e;
+  --accent-soft: #f9ebe3;
+  --accent-softer: #fbf3ed;
+
+  /* Semantic tones (desaturated, material-like) */
+  --amber: #c06a15;
+  --amber-soft: #faecd9;
+  --gold: #a5821f;
+  --gold-soft: #f6efcf;
+  --blue: #2e6da8;
+  --blue-soft: #e6eff8;
+  --grass: #3f7d44;
+  --grass-soft: #e7f0e4;
+
+  --ball: #d8ee4d;
+
+  /* Elevation — warm-tinted, layered */
+  --shadow-xs: 0 1px 2px rgba(46, 31, 18, 0.06);
+  --shadow-sm: 0 2px 6px rgba(46, 31, 18, 0.07), 0 1px 2px rgba(46, 31, 18, 0.04);
+  --shadow-md: 0 14px 34px -16px rgba(58, 38, 22, 0.24);
+  --shadow-lg: 0 28px 70px -28px rgba(58, 38, 22, 0.32);
+
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --sans: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+
+  font-family: var(--sans);
+  letter-spacing: 0;
+  color-scheme: light;
+  color: var(--ink-2);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 15px;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+
+h1, h2, h3, h4 {
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(178, 61, 22, 0.18);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(178, 61, 22, 0.22);
+  border-radius: 20px;
+  border: 3px solid var(--bg);
+}
+
+:where(button, [role='button']):focus-visible,
+:where(input, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
