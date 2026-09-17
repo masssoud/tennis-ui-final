@@ -44,23 +44,51 @@ export default function AgentDrawer({ users, sessions, onAddSessions, onRemoveSe
   }, [messages, typing])
 
   const send = (text) => {
-    const clean = text.trim()
+    const clean = String(text ?? '').trim()
     if (!clean || typing) return
     setMessages((m) => [...m, { role: 'user', text: clean }])
     setDraft('')
     setTyping(true)
+    /* pending context lives on the last bot message so multi-turn slots survive */
+    const last = messages[messages.length - 1]
+    const pending = last && last.role === 'bot' ? last.pending : null
     typeTimer.current = setTimeout(() => {
-      const answer = runAgent(clean, { users, sessions })
-      setMessages((m) => [...m, { role: 'bot', ...answer }])
+      let answer
+      try {
+        answer = runAgent(clean, { users, sessions, pending })
+      } catch (err) {
+        console.error('agent error:', err)
+        answer = { reply: 'خل — از اول بگو 😅 (جوابی متوجه نشدم توی حافظه‌م نماند)' }
+      }
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'bot',
+          text: answer.reply,
+          kind: answer.kind,
+          preview: answer.preview,
+          desc: answer.desc,
+          data: answer.data,
+          chips: answer.chips,
+          pending: answer.pending || null,
+        },
+      ])
       setTyping(false)
-    }, 650)
+    }, 500)
   }
 
   const commitPreview = (idx, preview) => {
     onAddSessions(preview)
     setMessages((m) =>
       m.map((msg, i) =>
-        i === idx ? { ...msg, preview: null, text: `ثبت شد ✓ — ${toPersianDigits(preview.length)} جلسه افزوده شد` } : msg,
+        i === idx
+          ? {
+              ...msg,
+              preview: null,
+              pending: null,
+              text: `ثبت شد ✓ — ${toPersianDigits(preview.length)} جلسه افزوده شد`,
+            }
+          : msg,
       ),
     )
   }
@@ -120,11 +148,13 @@ export default function AgentDrawer({ users, sessions, onAddSessions, onRemoveSe
                             title="حذف"
                             onClick={() => {
                               onRemoveSession(s.id)
-                              setMessages((m) =>
-                                m.map((mm, k) =>
-                                  k === i ? { ...mm, text: `حذف شد ✓ — ${sessionLabel(s, users)}`, kind: 'done' } : mm,
-                                ),
-                              )
+                               setMessages((m) =>
+                                 m.map((mm, k) =>
+                                   k === i
+                                     ? { ...mm, text: `حذف شد ✓ — ${sessionLabel(s, users)}`, kind: 'done', pending: null }
+                                     : mm,
+                                 ),
+                               )
                             }}
                           >
                             <TrashIcon />

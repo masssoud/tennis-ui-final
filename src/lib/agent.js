@@ -73,16 +73,18 @@ function findDay(parsed, today) {
     dow: null,
     label: 'فردا',
   }
-  for (const [w, dow] of Object.entries(WEEK)) {
-    if (parsed.text.includes(w)) {
-      const from = /از /.test(parsed.text) ? addDaysJalali(today, 1) : today
-      let d = from
-      for (let i = 0; i < 8; i++) {
-        if (weekdayIndex(d.jy, d.jm, d.jd) === dow) break
-        d = addDaysJalali(d, 1)
-      }
-      return { day: d, dow: parsed.text.includes('هر ' + w) ? dow : null, label: w }
+  const m = parsed.text.match(/(هر\s+)?(یکشنبه|دوشنبه|سه\s*شنبه|چهارشنبه|پنج\s*شنبه|جمعه|شنبه)/)
+  if (m) {
+    const name = m[2].replace(/\s+/g, '')
+    const dow = WEEK[name]
+    const hasEvery = !!m[1]
+    const from = /از /.test(parsed.text) ? addDaysJalali(today, 1) : today
+    let d = from
+    for (let i = 0; i < 8; i++) {
+      if (weekdayIndex(d.jy, d.jm, d.jd) === dow) break
+      d = addDaysJalali(d, 1)
     }
+    return { day: d, dow: hasEvery ? dow : null, label: name }
   }
   return { day: { ...today }, dow: null, label: null }
 }
@@ -211,17 +213,21 @@ export function faSessionDate(d) {
   return `${toPersianDigits(d.jd)} ${JALALI_MONTH_NAMES[d.jm - 1]}`
 }
 
-export default function runAgent(rawText, { users, sessions }) {
+export default function runAgent(rawText, ctx = {}) {
+  const { users = [], sessions = [], pending = null } = ctx
   const today = todayJalali()
   const parsed = {
-    text: strip(rawText),
+    text: strip(String(rawText ?? '')),
     today,
     users,
     sessions: sessions || [],
   }
 
-  const intent = slugIntent(parsed.text)
   const student = findStudent(parsed, users)
+  const intent =
+    pending && pending.ctx === 'create'
+      ? 'create-continue'
+      : slugIntent(parsed.text)
 
   if (intent === 'delete') {
     if (!student) {
@@ -254,46 +260,65 @@ export default function runAgent(rawText, { users, sessions }) {
 
   if (intent === 'propose') return proposePlan(parsed)
 
-  if (intent === 'create') {
+  if (intent === 'create' || intent === 'create-continue') {
     const dayInfo = findDay(parsed, today)
-    const time = findTime(parsed)
-    if (!student) {
+    /* pending slots survive between turns — new parse fills in gaps */
+    const carry = (pending && pending.ctx === 'create' ? pending.slots : {}) || {}
+    const slots = {
+      studentId: carry.studentId ?? (student ? student.id : null),
+      dow: carry.dow ?? dayInfo.dow,
+      day: carry.day ?? dayInfo.day,
+      time: carry.time ?? findTime(parsed),
+      count: carry.count ?? findCount(parsed),
+      type: carry.type ?? findType(parsed),
+      court: carry.court ?? findCourt(parsed),
+    }
+
+    if (slots.studentId === null) {
       return {
         reply: 'کدام هنرجو؟ اسمش را بگو — مثلاً «مسعود».',
         kind: 'chips',
         chips: users.map((u) => u.name),
+        pending: { ctx: 'create', ask: 'student', slots },
       }
     }
-    if (!time) {
-      return { reply: 'ساعت را بگو — مثلاً «ساعت ۱۰» یا «۱۰:۳۰».' }
+
+    if (slots.time === null) {
+      return {
+        reply: 'ساعت را بگو — مثلاً «ساعت ۱۰» یا «۱۰:۳۰».',
+        pending: { ctx: 'create', ask: 'time', slots },
+      }
     }
-    const dow = dayInfo.dow
-    const count = findCount(parsed)
-    if (count && dow === null) {
-      return { reply: 'برای تکرار باید روز هفته بگو — مثلاً «هر شنبه».' }
+
+    if (slots.count && slots.dow === null) {
+      return {
+        reply: 'برای تکرار باید روز هفته بگو — مثلاً «هر شنبه».',
+        pending: { ctx: 'create', ask: 'day', slots },
+      }
     }
-    const type = findType(parsed)
-    const court = findCourt(parsed)
-    const effectiveCount =
-      count ?? (dow !== null ? 4 : 1)
+
+    const effectiveCount = slots.count ?? (slots.dow !== null ? 4 : 1)
+    const st = users.find((u) => u.id === slots.studentId) || student
     let list = []
-    if (dow !== null) {
-      const aligned = firstAligned(dayInfo.day, dow)
+    if (slots.dow !== null) {
+      const aligned = firstAligned(dayInfo.day, slots.dow)
       for (let i = 0; i < effectiveCount; i++) {
         const d = addDaysJalali(aligned, i * 7)
         list.push({
-          studentId: student.id, jy: d.jy, jm: d.jm, jd: d.jd,
-          hour: time.hour, minute: time.minute, duration: 60, type, court, note: '',
+          studentId: slots.studentId, jy: d.jy, jm: d.jm, jd: d.jd,
+          hour: slots.time.hour, minute: slots.time.minute,
+          duration: 60, type: slots.type, court: slots.court, note: '',
         })
       }
     } else {
       list = [{
-        studentId: student.id, jy: dayInfo.day.jy, jm: dayInfo.day.jm, jd: dayInfo.day.jd,
-        hour: time.hour, minute: time.minute, duration: 60, type, court, note: '',
+        studentId: slots.studentId, jy: slots.day.jy, jm: slots.day.jm, jd: slots.day.jd,
+        hour: slots.time.hour, minute: slots.time.minute,
+        duration: 60, type: slots.type, court: slots.court, note: '',
       }]
     }
     const desc =
-      `${student.name} · ${TYPE_META[type].label} · ${court} · شروع ${faSessionDate(dayInfo.day)}`
+      `${st?.name || '؟'} · ${TYPE_META[slots.type].label} · ${slots.court} · شروع ${faSessionDate(slots.day)}`
     return {
       reply: `پیش‌نمایش ${toPersianDigits(list.length)} جلسه آماده است:`,
       kind: 'preview',
