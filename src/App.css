@@ -677,12 +677,19 @@
   color: var(--ink);
 }
 .cal-title {
+  border: 0;
+  background: transparent;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   line-height: 1.3;
+  padding: 3px 10px;
+  border-radius: 10px;
+  transition: background 0.16s var(--ease);
 }
+.cal-title:hover { background: var(--accent-soft); }
+.cal-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .cal-month { font-size: 17.5px; font-weight: 800; color: var(--ink); }
 .cal-year { font-size: 12px; color: var(--muted); font-weight: 600; }
 
@@ -1024,7 +1031,7 @@
 
 .toast {
   position: fixed;
-  bottom: 22px;
+  bottom: 88px;
   inset-inline: 0;
   margin-inline: auto;
   width: max-content;
@@ -1332,6 +1339,260 @@
   .cal-cell { border-radius: 50%; }
   .seg-btn { min-width: 0; flex: 1 1 40%; }
   .time-groups { flex-wrap: wrap; }
+  .student-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    padding: 22px 20px;
+  }
+  .student-hero .hero-text h1 { font-size: 22px; }
+  .hero-stats { gap: 7px; }
+  .hero-stat { padding: 11px 8px; }
+  .hs-num { font-size: 20px; }
+  .toast { bottom: 78px; }
+}
+
+/* ---------------- POLISH PASS ---------------- */
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(216, 238, 77, 0.08), transparent 24rem),
+  var(--bg);
+}
+
+.login-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(178, 61, 22, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(178, 61, 22, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 78%);
+  pointer-events: none;
+}
+
+.login-page {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 72% 12%, rgba(178, 61, 22, 0.07), transparent 28rem),
+    var(--bg);
+}
+
+.login-hero {
+  box-shadow: 20px 0 60px -42px rgba(53, 24, 10, 0.7);
+}
+
+.login-hero::before {
+  background:
+    radial-gradient(55% 48% at 78% 24%, rgba(255, 199, 148, 0.25), transparent 72%),
+    radial-gradient(45% 40% at 20% 88%, rgba(216, 238, 77, 0.1), transparent 70%);
+}
+
+.brand-mark {
+  backdrop-filter: blur(8px);
+}
+
+.login-form-side {
+  position: relative;
+}
+
+.login-form-side::before,
+.login-form-side::after {
+  content: '';
+  position: absolute;
+  border: 1px solid rgba(178, 61, 22, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.login-form-side::before {
+  width: 480px;
+  height: 480px;
+  top: -250px;
+  inset-inline-end: -180px;
+}
+
+.login-form-side::after {
+  width: 220px;
+  height: 220px;
+  bottom: -100px;
+  inset-inline-start: -80px;
+  border-color: rgba(216, 238, 77, 0.18);
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  border-color: rgba(217, 202, 187, 0.82);
+  box-shadow: 0 26px 70px -34px rgba(66, 39, 18, 0.34), var(--shadow-sm);
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline: 28px;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(90deg, var(--ball), var(--accent));
+}
+
+.lf-head h2 {
+  letter-spacing: -0.25px;
+}
+
+.otp-field .field-box {
+  background: linear-gradient(135deg, var(--accent-softer), var(--surface));
+}
+
+.otp-field input {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  text-align: center;
+  padding-block: 13px;
+}
+
+.dash {
+  background:
+    radial-gradient(circle at 92% 2%, rgba(216, 238, 77, 0.1), transparent 22rem),
+    var(--bg);
+}
+
+.dash-top {
+  box-shadow: 0 8px 24px -22px rgba(62, 35, 16, 0.55);
+}
+
+.dash-top::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -1px;
+  width: 92px;
+  height: 2px;
+  background: linear-gradient(to left, var(--accent), transparent);
+  opacity: 0.65;
+}
+
+.panel,
+.sidebar {
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.panel:hover,
+.sidebar:hover {
+  border-color: rgba(217, 202, 187, 0.95);
+  box-shadow: 0 12px 28px -24px rgba(62, 35, 16, 0.4), var(--shadow-sm);
+}
+
+.cal-panel,
+.day-panel,
+.upcoming-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.cal-panel::after,
+.upcoming-panel::after {
+  content: '';
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(178, 61, 22, 0.065);
+  border-radius: 50%;
+  inset-inline-end: -86px;
+  top: -92px;
+  pointer-events: none;
+}
+
+.panel-head {
+  position: relative;
+  z-index: 1;
+}
+
+.cal-panel .panel-head h2,
+.upcoming-panel .panel-head h2 {
+  letter-spacing: -0.2px;
+}
+
+.student-hero {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(216, 238, 77, 0.12), transparent 18rem),
+    linear-gradient(150deg, #a03a12 0%, #7c2a0d 55%, #581c08 100%);
+}
+
+.student-hero::before {
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.018), 0 0 0 36px rgba(255, 255, 255, 0.014);
+}
+
+.btn-primary:focus-visible,
+.login-submit:focus-visible,
+.agent-fab:focus-visible {
+  outline: 3px solid rgba(216, 238, 77, 0.9);
+  outline-offset: 3px;
+}
+
+@media (max-width: 960px) {
+  .login-form-side::before,
+  .login-form-side::after {
+    display: none;
+  }
+
+  .login-form-side {
+    min-height: 62svh;
+    align-items: start;
+    padding-top: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-form-side {
+    padding: 18px 14px 30px;
+  }
+
+  .login-card {
+    border-radius: 20px;
+  }
+
+  .login-card::before {
+    inset-inline: 20px;
+  }
+
+  .dash-top {
+    position: relative;
+  }
+
+  .dash-user-name {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .coach-layout,
+  .student-layout {
+    padding-inline: 12px;
+  }
+
+  .student-hero {
+    width: calc(100% - 24px);
+  }
+}
+
+@media (min-width: 961px) {
+  .coach-layout,
+  .student-layout {
+    padding-top: 28px;
+  }
+
+  .sidebar {
+    top: 82px;
+  }
+
+  .main > .panel:first-child,
+  .student-layout > .panel:first-child {
+    box-shadow: 0 18px 38px -30px rgba(62, 35, 16, 0.42), var(--shadow-sm);
+  }
 }
 
 /* ---------------- WEEK TIMELINE ---------------- */

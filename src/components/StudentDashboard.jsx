@@ -222,6 +222,8 @@ export default function StudentDashboard({ currentUser, sessions, onLogout }) {
                   key={d.key}
                   className={`week-day ${d.count ? 'has-session' : ''} ${today.jd === d.jd && weekOffset === 0 && today.jm === d.jm ? 'now' : ''}`}
                   onClick={() => setSelectedDate({ jy: d.jy, jm: d.jm, jd: d.jd })}
+                  aria-label={`${WEEKDAY_FULL[weekdayIndex(d.jy, d.jm, d.jd)]} ${toPersianDigits(d.jd)}${d.count ? `، ${toPersianDigits(d.count)} جلسه` : ''}`}
+                  aria-pressed={dayKey(selectedDate.jy, selectedDate.jm, selectedDate.jd) === d.key}
                 >
                   <span className="wd-week">{WEEKDAY_FULL[weekdayIndex(d.jy, d.jm, d.jd)]}</span>
                   <span className="wd-num">{toPersianDigits(d.jd)}</span>

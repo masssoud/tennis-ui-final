@@ -52,10 +52,10 @@ export default function PersianCalendar({
         <button type="button" className="cal-nav" onClick={goNext} aria-label="ماه بعد">
           ‹
         </button>
-        <div className="cal-title" onClick={goToday} title="برو به امروز">
+        <button type="button" className="cal-title" onClick={goToday} title="برو به امروز" aria-label="رفتن به امروز">
           <span className="cal-month">{MONTH_NAMES[vm - 1]}</span>
           <span className="cal-year">{toPersianDigits(vy)}</span>
-        </div>
+        </button>
         <button type="button" className="cal-nav" onClick={goPrev} aria-label="ماه قبل">
           ›
         </button>
@@ -84,6 +84,9 @@ export default function PersianCalendar({
               type="button"
               className={cls}
               onClick={() => onSelect && onSelect(c)}
+              aria-label={`${toPersianDigits(c.jd)} ${MONTH_NAMES[c.jm - 1]}`}
+              aria-current={isToday(c.jy, c.jm, c.jd) ? 'date' : undefined}
+              aria-pressed={isSelected(c.jy, c.jm, c.jd)}
             >
               <span className="cal-num">{toPersianDigits(c.jd)}</span>
               {tone && <span className="cal-dot" />}

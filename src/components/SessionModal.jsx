@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   TYPE_META,
   COURTS,
@@ -74,6 +74,14 @@ export default function SessionModal({
 
   const courtMeta = COURTS.find((c) => c.tone === court) || COURTS[0]
 
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   const submit = (e) => {
     e.preventDefault()
     if (!studentId || conflicts.length) return
@@ -95,17 +103,17 @@ export default function SessionModal({
 
   return (
     <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="session-modal">
+      <div className="session-modal" role="dialog" aria-modal="true" aria-labelledby="session-modal-title">
         <div className="modal-head">
           <div>
-            <h3>{editing ? 'ویرایش جلسه' : 'برنامه‌ریزی جلسه'}</h3>
+            <h3 id="session-modal-title">{editing ? 'ویرایش جلسه' : 'برنامه‌ریزی جلسه'}</h3>
             <p className="modal-date">
               {editing && <span className="editing-hint">در حال ویرایش · </span>}
               {editing ? '' : 'روز: '}
               {formatFull(date.jy, date.jm, date.jd)}
             </p>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="بستن">×</button>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="بستن">×</button>
         </div>
 
         <form onSubmit={submit}>
@@ -143,13 +151,14 @@ export default function SessionModal({
           </div>
 
           {!editing && (
-            <div className="segment" role="tablist" aria-label="تکرار هفتگی">
+            <div className="segment" role="group" aria-label="تکرار هفتگی">
               {REPEATS.map((r) => (
                 <button
                   key={r.v}
                   type="button"
                   className={`seg-btn seg-clay ${repeat === r.v ? 'active' : ''}`}
                   onClick={() => setRepeat(r.v)}
+                  aria-pressed={repeat === r.v}
                 >
                   {r.label}
                 </button>
@@ -157,26 +166,28 @@ export default function SessionModal({
             </div>
           )}
 
-          <div className="segment" role="tablist" aria-label="نوع جلسه">
+          <div className="segment" role="group" aria-label="نوع جلسه">
             {Object.entries(TYPE_META).map(([key, meta]) => (
               <button
                 key={key}
                 type="button"
                 className={`seg-btn seg-${meta.tone} ${type === key ? 'active' : ''}`}
                 onClick={() => setType(key)}
+                aria-pressed={type === key}
               >
                 {meta.label}
               </button>
             ))}
           </div>
 
-          <div className="segment" role="tablist" aria-label="زمین">
+          <div className="segment" role="group" aria-label="زمین">
             {COURTS.map((c) => (
               <button
                 key={c.tone}
                 type="button"
                 className={`seg-btn seg-${c.tone} ${court === c.tone ? 'active' : ''}`}
                 onClick={() => setCourt(c.tone)}
+                aria-pressed={court === c.tone}
               >
                 {c.label}
               </button>

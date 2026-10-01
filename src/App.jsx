@@ -3,9 +3,8 @@ import './App.css'
 import LoginPage from './components/LoginPage'
 import CoachDashboard from './components/CoachDashboard'
 import StudentDashboard from './components/StudentDashboard'
-import { todayJalali, jalaaliMonthLength } from './lib/persianDate'
+import { createSessions, loadState, requestOtp, verifyOtp, logout } from './lib/api'
 
-const STORAGE_KEY = 'tennis-yar-v1'
 const USER_KEY = 'tennis-yar-user'
 
 const seedUsers = [
@@ -15,63 +14,8 @@ const seedUsers = [
   { id: 's-3', name: 'میلاد کریمی', role: 'student', phone: '09120000004', color: '#a24ccf' },
 ]
 
-function makeSeedSessions() {
-  const t = todayJalali()
-  const items = []
-  const base = [
-    { s: 's-1', day: 0, hour: 8, type: 'private', court: 'زمین خاکی' },
-    { s: 's-1', day: 2, hour: 10, type: 'private', court: 'زمین خاکی' },
-    { s: 's-2', day: 0, hour: 9, type: 'group', court: 'زمین خاکی' },
-    { s: 's-2', day: 4, hour: 16, type: 'group', court: 'زمین خاکی' },
-    { s: 's-3', day: 1, hour: 18, type: 'spar', court: 'زمین خاکی' },
-    { s: 's-3', day: 3, hour: 15, type: 'private', court: 'زمین خاکی' },
-  ]
-  base.forEach((b, i) => {
-    let jd = t.jd + b.day
-    let jm = t.jm
-    let jy = t.jy
-    const len = jalaaliMonthLength(jy, jm)
-    if (jd > len) {
-      jd -= len
-      jm += 1
-    }
-    if (jm > 12) {
-      jm = 1
-      jy += 1
-    }
-
-    items.push({
-      id: `seed-${i}`,
-      studentId: b.s,
-      jy,
-      jm,
-      jd,
-      hour: b.hour,
-      minute: 0,
-      duration: 60,
-      type: b.type,
-      court: b.court,
-      note: '',
-    })
-  })
-  return items
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {
-    /* ignore */
-  }
-  return {
-    users: seedUsers,
-    sessions: makeSeedSessions(),
-  }
-}
-
 export default function App() {
-  const [state, setState] = useState(loadState)
+  const [state, setState] = useState({ users: seedUsers, sessions: [], facilities: [] })
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const raw = localStorage.getItem(USER_KEY)
@@ -83,14 +27,6 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      /* ignore */
-    }
-  }, [state])
-
-  useEffect(() => {
-    try {
       if (currentUser) localStorage.setItem(USER_KEY, JSON.stringify(currentUser))
       else localStorage.removeItem(USER_KEY)
     } catch {
@@ -98,25 +34,31 @@ export default function App() {
     }
   }, [currentUser])
 
+  useEffect(() => {
+    if (!currentUser) return
+    let cancelled = false
+    loadState(currentUser)
+      .then((remoteState) => {
+        if (!cancelled) setState(remoteState)
+      })
+      .catch((error) => {
+        console.error('Could not load API state:', error)
+        if (!cancelled) setCurrentUser(null)
+      })
+    return () => { cancelled = true }
+  }, [currentUser])
+
   const update = (patch) => setState((prev) => ({ ...prev, ...patch }))
 
   const addUser = (user) => {
-    const id = `student-${Date.now()}`
-    const complete = { ...user, id, color: '#b3441f' }
+    const complete = { ...user, id: `student-${Date.now()}`, color: '#b3441f' }
     update({ users: [...state.users, complete] })
     return complete
   }
 
-  const addSessions = (list) => {
-    update({
-      sessions: [
-        ...state.sessions,
-        ...list.map((s) => ({
-          id: `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          ...s,
-        })),
-      ],
-    })
+  const addSessions = async (list) => {
+    const created = await createSessions(list, state.facilities)
+    update({ sessions: [...state.sessions, ...created] })
   }
 
   const updateSession = (id, patch) => {
@@ -130,25 +72,27 @@ export default function App() {
   }
 
   const resetDemo = () => {
-    localStorage.removeItem(STORAGE_KEY)
-    setState({
-      users: seedUsers,
-      sessions: makeSeedSessions(),
-    })
+    setState((previous) => ({ ...previous, sessions: [] }))
   }
 
-  const handleLogin = (user) => {
-    if (!state.users.some((u) => u.id === user.id)) {
-      update({ users: [...state.users, user] })
-    }
-    setCurrentUser(user)
+  const handleRequestOtp = (phone) => requestOtp(phone)
+
+  const handleVerifyOtp = async (phone, code, name) => {
+    const loggedInUser = await verifyOtp(phone, code, name)
+    setCurrentUser(loggedInUser)
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    setCurrentUser(null)
   }
 
   if (!currentUser) {
     return (
       <LoginPage
         users={state.users}
-        onLogin={handleLogin}
+        onRequestOtp={handleRequestOtp}
+        onVerifyOtp={handleVerifyOtp}
       />
     )
   }
@@ -163,7 +107,7 @@ export default function App() {
         onAddSessions={addSessions}
         onUpdateSession={updateSession}
         onRemoveSession={removeSession}
-        onLogout={() => setCurrentUser(null)}
+         onLogout={handleLogout}
         onResetDemo={resetDemo}
       />
     )
@@ -173,7 +117,7 @@ export default function App() {
     <StudentDashboard
       currentUser={currentUser}
       sessions={state.sessions.filter((s) => s.studentId === currentUser.id)}
-      onLogout={() => setCurrentUser(null)}
+        onLogout={handleLogout}
     />
   )
 }

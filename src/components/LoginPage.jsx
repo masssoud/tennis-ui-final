@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { normalizeDigits } from '../lib/data'
 import { toPersianDigits } from '../lib/persianDate'
 import { APP_VERSION } from '../lib/version'
@@ -62,9 +62,9 @@ function CourtArt() {
   )
 }
 
-function Field({ label, value, onChange, placeholder, dir = 'rtl', inputMode }) {
+function Field({ label, value, onChange, placeholder, dir = 'rtl', inputMode, maxLength = 11, className = '' }) {
   return (
-    <label className="field">
+    <label className={`field ${className}`}>
       <span className="field-label">{label}</span>
       <div className="field-box">
         <input
@@ -74,63 +74,53 @@ function Field({ label, value, onChange, placeholder, dir = 'rtl', inputMode }) 
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           dir={dir}
-          maxLength="11"
+          maxLength={maxLength}
         />
       </div>
     </label>
   )
 }
 
-const ROLE_FA = { coach: 'مربی', student: 'هنرجو' }
-
-export default function LoginPage({ users, onLogin }) {
-  const [step, setStep] = useState('phone') // 'phone' | 'name'
+export default function LoginPage({ onRequestOtp, onVerifyOtp }) {
+  const [step, setStep] = useState('phone') // 'phone' | 'otp'
   const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
-  const nameRef = useRef(null)
-
+  const [busy, setBusy] = useState(false)
   const digits = useMemo(() => normalizeDigits(phone), [phone])
-  const found = useMemo(
-    () => (digits.length >= 10 ? users.find((u) => u.phone === digits) : null),
-    [users, digits],
-  )
 
-  useEffect(() => {
-    if (step === 'name') nameRef.current?.focus()
-  }, [step])
-
-  const goName = () => {
-    setError('')
-    setStep('name')
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (step === 'phone') {
       if (digits.length < 10) {
         setError('شماره موبایل را کامل وارد کنید (۱۱ رقم)')
         return
       }
-      if (found) {
-        onLogin(found)
-        return
+      setBusy(true)
+      try {
+        await onRequestOtp(digits)
+        setError('')
+        setStep('otp')
+      } catch (requestError) {
+        setError(requestError.message)
+      } finally {
+        setBusy(false)
       }
-      goName()
       return
     }
-    const trimmed = name.trim()
-    if (!trimmed) {
-      setError('نام خود را وارد کنید')
+    if (code.length !== 6) {
+      setError('کد تأیید ۶ رقمی را وارد کنید')
       return
     }
-    onLogin({
-      id: `student-${Date.now()}`,
-      name: trimmed,
-      role: 'student',
-      phone: digits,
-      color: '#b23d16',
-    })
+    setBusy(true)
+    try {
+      await onVerifyOtp(digits, code, name.trim())
+    } catch (verifyError) {
+      setError(verifyError.message)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -178,26 +168,9 @@ export default function LoginPage({ users, onLogin }) {
                 inputMode="numeric"
               />
 
-              {digits.length >= 10 && !found && (
-                <p className="login-notice">
-                  این شماره ثبت نشده است؛ در ادامه یک حساب <strong>هنرجو</strong> برای شما ساخته می‌شود.
-                </p>
-              )}
-
-              {found && (
-                <div className="found-row" role="status">
-                  <span className="found-avatar">{found.name.charAt(0)}</span>
-                  <span className="found-info">
-                    <span className="found-name">{found.name}</span>
-                    <span className="found-role">{ROLE_FA[found.role]}</span>
-                  </span>
-                  <span className="found-ball"><TennisBall /></span>
-                </div>
-              )}
-
               {error && <p className="login-error">{error}</p>}
 
-              <button type="submit" className="login-submit" disabled={digits.length === 0}>
+              <button type="submit" className="login-submit" disabled={digits.length === 0 || busy}>
                 <span>ادامه</span>
                 <TennisBall className="submit-ball" />
               </button>
@@ -211,20 +184,31 @@ export default function LoginPage({ users, onLogin }) {
               <button
                 type="button"
                 className="step-back"
-                onClick={() => { setStep('phone'); setError(''); setPhone(phone) }}
+                onClick={() => { setStep('phone'); setError(''); setCode('') }}
               >
                 ‹ بازگشت
               </button>
 
               <div className="lf-head">
-                <h2>به تنیس‌یار خوش آمدید</h2>
+                <h2>کد تأیید</h2>
                 <p>
-                  شماره <span className="lf-num" dir="ltr">{toPersianDigits(digits)}</span> جدید است — نام خود را وارد کنید
+                  کد ارسال‌شده به شماره <span className="lf-num" dir="ltr">{toPersianDigits(digits)}</span> را وارد کنید
                 </p>
               </div>
 
               <Field
-                label="نام و نام‌خانوادگی"
+                label="کد تأیید"
+                value={code}
+                onChange={(v) => { setCode(normalizeDigits(v).replace(/\D/g, '')); setError('') }}
+                placeholder="۱۲۳۴۵۶"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                className="otp-field"
+              />
+
+              <Field
+                label="نام و نام‌خانوادگی (برای ثبت‌نام جدید)"
                 value={name}
                 onChange={(v) => { setName(v); setError('') }}
                 placeholder="مثلاً: مسعود نجفی"
@@ -232,8 +216,8 @@ export default function LoginPage({ users, onLogin }) {
 
               {error && <p className="login-error">{error}</p>}
 
-              <button type="submit" className="login-submit" disabled={!name.trim()}>
-                <span>ساخت حساب و ورود</span>
+              <button type="submit" className="login-submit" disabled={code.length !== 6 || busy}>
+                <span>تأیید و ورود</span>
                 <TennisBall className="submit-ball" />
               </button>
 
