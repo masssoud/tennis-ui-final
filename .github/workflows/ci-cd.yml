@@ -22,15 +22,3 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: docker build --build-arg VITE_API_BASE_URL="$API_BASE_URL" --tag tennis-ui:${{ github.sha }} .
-
-  deploy:
-    if: github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger ParsPack deployment
-        env:
-          DEPLOY_HOOK_URL: ${{ secrets.PARSPACK_UI_DEPLOY_HOOK_URL }}
-        run: |
-          test -n "$DEPLOY_HOOK_URL"
-          curl --fail --silent --show-error --request POST "$DEPLOY_HOOK_URL"
